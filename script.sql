@@ -14,7 +14,7 @@ SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,N
 -- -----------------------------------------------------
 -- Schema SistemaGestionUR
 -- -----------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS `SistemaGestionUR` DEFAULT CHARACTER SET utf8 ;
+CREATE SCHEMA IF NOT EXISTS `SistemaGestionUR` DEFAULT CHARACTER SET = utf8 ;
 USE `SistemaGestionUR` ;
 
 -- -----------------------------------------------------
@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS `SistemaGestionUR`.`respuesta` (
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB
-DEFAULT CHARACTER SET = DEFAULT;
+DEFAULT CHARACTER SET = utf8;
 
 
 -- -----------------------------------------------------
