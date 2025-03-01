@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS `reapertura` (
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `respuesta` (
   `idrespuesta` INT NOT NULL AUTO_INCREMENT,
-  `oficioPDF` VARBINARY(8000) NULL,
+  `oficioPDF` LONGBLOB NULL,
   `comentario` LONGTEXT NOT NULL,
   `fecha` DATE NOT NULL,
   `idadmin` INT NOT NULL,
@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS `calificacion` (
 CREATE TABLE IF NOT EXISTS `evidencia` (
   `idevidencia` INT NOT NULL AUTO_INCREMENT,
   `tipoArchivo` ENUM('pdf', 'video', 'imagen', 'audio', 'otro') NOT NULL,
-  `archivo` VARBINARY(8000) NOT NULL,
+  `archivo` LONGBLOB NOT NULL,
   `descripcion` LONGTEXT NOT NULL,
   `fechaHoraCarga` DATETIME NULL,
   `idsolicitud` INT NOT NULL,
