@@ -10,47 +10,39 @@ SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,N
 -- -----------------------------------------------------
 -- Schema SistemaGestionUR
 -- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `SistemaGestionUR` DEFAULT CHARACTER SET utf8;
+USE `SistemaGestionUR`;
 
 -- -----------------------------------------------------
--- Schema SistemaGestionUR
+-- Table `usuario`
 -- -----------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS `SistemaGestionUR` DEFAULT CHARACTER SET = utf8 ;
-USE `SistemaGestionUR` ;
-
--- -----------------------------------------------------
--- Table `SistemaGestionUR`.`usuario`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `SistemaGestionUR`.`usuario` (
+CREATE TABLE IF NOT EXISTS `usuario` (
   `idusuario` INT NOT NULL AUTO_INCREMENT,
   `usuario` VARCHAR(15) NOT NULL,
   `nombreCompleto` VARCHAR(45) NULL,
   `tipoDocumento` ENUM('cedula', 'pasaporte', 'cedula de extranjeria') NULL,
-  `numeroDocumento` VARCHAR(45) NULL,
+  `numeroDocumento` VARCHAR(45) NULL UNIQUE,
   `correoElectronico` VARCHAR(50) NULL,
   `telefono` VARCHAR(20) NULL,
   `direccionInterna` VARCHAR(45) NULL,
   `rol` ENUM('propietario', 'inquilino') NULL,
   PRIMARY KEY (`idusuario`),
-  UNIQUE INDEX `usuario_UNIQUE` (`usuario` ASC) VISIBLE,
-  UNIQUE INDEX `numeroDocumento_UNIQUE` (`numeroDocumento` ASC) VISIBLE)
-ENGINE = InnoDB;
-
+  UNIQUE (`usuario`)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8;
 
 -- -----------------------------------------------------
--- Table `SistemaGestionUR`.`admin`
+-- Table `admin`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `SistemaGestionUR`.`admin` (
+CREATE TABLE IF NOT EXISTS `admin` (
   `idadmin` INT NOT NULL AUTO_INCREMENT,
-  `usuario` VARCHAR(45) NOT NULL,
-  PRIMARY KEY (`idadmin`),
-  UNIQUE INDEX `usuario_UNIQUE` (`usuario` ASC) VISIBLE)
-ENGINE = InnoDB;
-
+  `usuario` VARCHAR(45) NOT NULL UNIQUE,
+  PRIMARY KEY (`idadmin`)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8;
 
 -- -----------------------------------------------------
--- Table `SistemaGestionUR`.`solicitud`
+-- Table `solicitud`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `SistemaGestionUR`.`solicitud` (
+CREATE TABLE IF NOT EXISTS `solicitud` (
   `idsolicitud` INT NOT NULL AUTO_INCREMENT,
   `tipo` ENUM('peticion', 'queja', 'reclamo', 'sugerencia') NOT NULL,
   `categoria` ENUM('servicios generales', 'seguridad', 'areas comunes') NULL,
@@ -60,89 +52,90 @@ CREATE TABLE IF NOT EXISTS `SistemaGestionUR`.`solicitud` (
   `fechaActualizacion` DATETIME NOT NULL,
   `idusuario` INT NOT NULL,
   PRIMARY KEY (`idsolicitud`),
-  INDEX `fk_Solicitud_usuario1_idx` (`idusuario` ASC) VISIBLE,
-  CONSTRAINT `fk_Solicitud_usuario1`
+  INDEX `fk_solicitud_usuario_idx` (`idusuario`),
+  CONSTRAINT `fk_solicitud_usuario`
     FOREIGN KEY (`idusuario`)
-    REFERENCES `SistemaGestionUR`.`usuario` (`idusuario`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
-
+    REFERENCES `usuario` (`idusuario`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET=utf8;
 
 -- -----------------------------------------------------
--- Table `SistemaGestionUR`.`reapertura`
+-- Table `reapertura`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `SistemaGestionUR`.`reapertura` (
+CREATE TABLE IF NOT EXISTS `reapertura` (
   `idreapertura` INT NOT NULL AUTO_INCREMENT,
   `justificacion` LONGTEXT NOT NULL,
   `fecha` DATE NOT NULL,
   `idsolicitud` INT NOT NULL,
   `idusuario` INT NOT NULL,
   PRIMARY KEY (`idreapertura`),
-  INDEX `fk_reapertura_Solicitud1_idx` (`idsolicitud` ASC) VISIBLE,
-  INDEX `fk_reapertura_usuario1_idx` (`idusuario` ASC) VISIBLE,
-  CONSTRAINT `fk_reapertura_Solicitud1`
+  INDEX `fk_reapertura_solicitud_idx` (`idsolicitud`),
+  INDEX `fk_reapertura_usuario_idx` (`idusuario`),
+  CONSTRAINT `fk_reapertura_solicitud`
     FOREIGN KEY (`idsolicitud`)
-    REFERENCES `SistemaGestionUR`.`solicitud` (`idsolicitud`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_reapertura_usuario1`
+    REFERENCES `solicitud` (`idsolicitud`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_reapertura_usuario`
     FOREIGN KEY (`idusuario`)
-    REFERENCES `SistemaGestionUR`.`usuario` (`idusuario`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
-
+    REFERENCES `usuario` (`idusuario`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET=utf8;
 
 -- -----------------------------------------------------
--- Table `SistemaGestionUR`.`respuesta`
+-- Table `respuesta`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `SistemaGestionUR`.`respuesta` (
+CREATE TABLE IF NOT EXISTS `respuesta` (
   `idrespuesta` INT NOT NULL AUTO_INCREMENT,
   `oficioPDF` VARBINARY(8000) NULL,
-  `comentario` LONGTEXT BINARY NOT NULL,
+  `comentario` LONGTEXT NOT NULL,
   `fecha` DATE NOT NULL,
   `idadmin` INT NOT NULL,
-  `idreapertura` INT NOT NULL,
+  `idreapertura` INT NULL,
   `idsolicitud` INT NOT NULL,
   PRIMARY KEY (`idrespuesta`),
-  INDEX `fk_respuesta_admin1_idx` (`idadmin` ASC) VISIBLE,
-  INDEX `fk_respuesta_reapertura1_idx` (`idreapertura` ASC, `idsolicitud` ASC) VISIBLE,
-  CONSTRAINT `fk_respuesta_admin1`
+  INDEX `fk_respuesta_admin_idx` (`idadmin`),
+  INDEX `fk_respuesta_solicitud_idx` (`idsolicitud`),
+  INDEX `fk_respuesta_reapertura_idx` (`idreapertura`),
+  CONSTRAINT `fk_respuesta_admin`
     FOREIGN KEY (`idadmin`)
-    REFERENCES `SistemaGestionUR`.`admin` (`idadmin`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_respuesta_reapertura1`
-    FOREIGN KEY (`idreapertura` , `idsolicitud`)
-    REFERENCES `SistemaGestionUR`.`reapertura` (`idreapertura` , `idsolicitud`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8;
-
+    REFERENCES `admin` (`idadmin`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_respuesta_solicitud`
+    FOREIGN KEY (`idsolicitud`)
+    REFERENCES `solicitud` (`idsolicitud`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_respuesta_reapertura`
+    FOREIGN KEY (`idreapertura`)
+    REFERENCES `reapertura` (`idreapertura`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET=utf8;
 
 -- -----------------------------------------------------
--- Table `SistemaGestionUR`.`calificacion`
+-- Table `calificacion`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `SistemaGestionUR`.`calificacion` (
+CREATE TABLE IF NOT EXISTS `calificacion` (
   `idcalificacion` INT NOT NULL AUTO_INCREMENT,
   `puntuacion` ENUM('1', '2', '3', '4', '5') NOT NULL,
   `idrespuesta` INT NOT NULL,
   PRIMARY KEY (`idcalificacion`),
-  INDEX `fk_claifica_respuesta1_idx` (`idrespuesta` ASC) VISIBLE,
-  CONSTRAINT `fk_claifica_respuesta1`
+  INDEX `fk_calificacion_respuesta_idx` (`idrespuesta`),
+  CONSTRAINT `fk_calificacion_respuesta`
     FOREIGN KEY (`idrespuesta`)
-    REFERENCES `SistemaGestionUR`.`respuesta` (`idrespuesta`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
-
+    REFERENCES `respuesta` (`idrespuesta`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET=utf8;
 
 -- -----------------------------------------------------
--- Table `SistemaGestionUR`.`evidencia`
+-- Table `evidencia`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `SistemaGestionUR`.`evidencia` (
+CREATE TABLE IF NOT EXISTS `evidencia` (
   `idevidencia` INT NOT NULL AUTO_INCREMENT,
   `tipoArchivo` ENUM('pdf', 'video', 'imagen', 'audio', 'otro') NOT NULL,
   `archivo` VARBINARY(8000) NOT NULL,
@@ -150,14 +143,13 @@ CREATE TABLE IF NOT EXISTS `SistemaGestionUR`.`evidencia` (
   `fechaHoraCarga` DATETIME NULL,
   `idsolicitud` INT NOT NULL,
   PRIMARY KEY (`idevidencia`),
-  INDEX `fk_evidencia_Solicitud_idx` (`idsolicitud` ASC) VISIBLE,
-  CONSTRAINT `fk_evidencia_Solicitud`
+  INDEX `fk_evidencia_solicitud_idx` (`idsolicitud`),
+  CONSTRAINT `fk_evidencia_solicitud`
     FOREIGN KEY (`idsolicitud`)
-    REFERENCES `SistemaGestionUR`.`solicitud` (`idsolicitud`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
-
+    REFERENCES `solicitud` (`idsolicitud`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET=utf8;
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
