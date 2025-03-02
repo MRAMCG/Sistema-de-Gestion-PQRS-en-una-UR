@@ -49,3 +49,27 @@ JOIN respuesta r ON s.idsolicitud = r.idsolicitud
 GROUP BY s.idsolicitud
 HAVING COUNT(r.idrespuesta) > @promedio
 ORDER BY num_respuestas DESC;
+
+-- ¿Cuáles son los clientes con mas quejas durante el ultimo mes?
+SELECT c.nombre, sub.total_quejas
+FROM (
+    SELECT cliente_id, COUNT(*) AS total_quejas
+    FROM quejas
+    WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)  -- Filtra quejas del último mes
+    GROUP BY cliente_id
+) AS sub
+JOIN clientes c ON sub.cliente_id = c.id
+ORDER BY sub.total_quejas DESC;
+
+-- ¿Cuáles son los nombres de los clientes con más quejas registradas, considerando todos los que tienen una cantidad de quejas dentro del top 10?
+SELECT c.nombre, COUNT(q.id) AS total_quejas
+FROM quejas q
+JOIN clientes c ON q.cliente_id = c.id
+GROUP BY c.nombre
+HAVING COUNT(q.id) >= (
+    SELECT COUNT(*) 
+    FROM quejas 
+    GROUP BY cliente_id 
+    ORDER BY COUNT(*) DESC 
+)
+ORDER BY total_quejas DESC;
