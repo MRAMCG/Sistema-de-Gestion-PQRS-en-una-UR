@@ -73,3 +73,23 @@ HAVING COUNT(q.id) >= (
     ORDER BY COUNT(*) DESC 
 )
 ORDER BY total_quejas DESC;
+
+-- Tiempo promedio de resolución de solicitudes resueltas con evidencia
+SELECT tipo, 
+       AVG(TIMESTAMPDIFF(DAY, fechaHoraCreacion, fechaActualizacion)) AS tiempo_promedio_dias,
+       MIN(TIMESTAMPDIFF(DAY, fechaHoraCreacion, fechaActualizacion)) AS tiempo_minimo_dias,
+       MAX(TIMESTAMPDIFF(DAY, fechaHoraCreacion, fechaActualizacion)) AS tiempo_maximo_dias,
+       COUNT(*) AS total_solicitudes_resueltas
+FROM solicitud
+WHERE estado = 'resuelta'
+GROUP BY tipo
+ORDER BY tiempo_promedio_dias DESC;
+
+-- Administradores con más respuestas sin contestar
+SELECT a.usuario, COUNT(r.idRespuesta) AS respuestas_pendientes
+FROM admin a
+JOIN respuesta r ON a.idAdmin = r.idAdmin
+WHERE r.comentario IS NULL OR r.comentario = ''
+GROUP BY a.idAdmin
+ORDER BY respuestas_pendientes DESC;
+
