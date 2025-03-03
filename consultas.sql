@@ -84,11 +84,12 @@ GROUP BY u.idusuario
 HAVING total_evidencias > 3
 ORDER BY total_evidencias DESC;
 
--- 10. ¿Cuál es la calificación promedio de las respuestas según el tipo de solicitud?
-SELECT s.tipo, ROUND(AVG(c.puntuacion),2) AS calificacion_promedio
+-- 10. ¿Cuales PQRS no han recibido respuesta en más de 15 días?
+SELECT 
+    u.idusuario AS S.idsolicitud, 
+     s.descripcion, 
+    s.fechaHoraCreacion
 FROM Solicitud s
-JOIN Respuesta r ON s.idsolicitud = r.idsolicitud
-JOIN Calificacion c ON r.idrespuesta = c.idrespuesta
-GROUP BY s.tipo
-ORDER BY calificacion_promedio DESC;
+WHERE estado = 'resuelta' 
+AND DATEDIFF(NOW(), s.fechaHoraCreacion) > 15;
 
