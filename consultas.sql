@@ -1,42 +1,31 @@
 -- Personas con mas de 2 solicitudes y una calificacion menor a 3
+SELECT  U.nombreCompleto, COUNT(S.idsolicitud) AS totalSolHechas, 
+MIN(C.puntuacion) AS peorCalificacion
+FROM USUARIO AS U
+JOIN SOLICITUD AS S ON U.idusuario = S.idusuario
+JOIN RESPUESTA AS R ON S.idsolicitud = R.idsolicitud
+JOIN CALIFICACION C ON R.idrespuesta = C.idrespuesta
+GROUP BY U.idusuario, U.nombreCompleto
+HAVING COUNT(S.idsolicitud) > 2 AND MIN(C.puntuacion) IN ('1', '2');
 
-select  u.nombreCompleto, count(s.idsolicitud) as totalSolHechas, 
-min(c.puntuacion) as peorCalificacion
-from usuario as u
-join solicitud as s on u.idusuario = s.idusuario
-join respuesta as r on s.idsolicitud = r.idsolicitud
-join calificacion c on r.idrespuesta = c.idrespuesta
-group by u.idusuario, u.nombreCompleto
-having count(s.idsolicitud) > 2 and min(c.puntuacion) in ('1', '2');
+-- Administradores que han respondido mas solicitudes que el promedio
+SELECT A.idadmin, A.usuario AS usuarioAdmin, COUNT(R.idrespuesta) AS totalRespuestas
+FROM ADMIN AS A
+JOIN RESPUESTA AS R ON A.idadmin = R.idadmin
+GROUP BY A.idadmin
+HAVING totalRespuestas > (SELECT AVG(totalResp)
+			FROM (SELECT COUNT(R.idrespuesta) AS totalResp
+					FROM RESPUESTA AS R GROUP BY R.idadmin) AS promRespuestas);
 
--- Administradores que han respondido más solicitudes que el promedio
+-- Promedio general de calificaciones y promedio de respuestas por solicitud
+SELECT 
+    (SELECT ROUND(AVG(puntuacion), 2) FROM calificacion) AS promedio_general_calificaciones,
+    (SELECT ROUND(AVG(conteo), 2) 
+     FROM (SELECT COUNT(*) AS conteo 
+           FROM respuesta 
+           GROUP BY idsolicitud) AS temp) AS promedio_respuestas_por_solicitud;
 
-select a.idadmin, a.usuario as usuarioAdmin, count(r.idrespuesta) as totalRespuestas
-from admin as a
-join respuesta as r on a.idadmin = r.idadmin
-group by a.idadmin
-having totalRespuestas > (select avg(totalResp)
-			from (select count(r.idrespuesta) as totalResp
-					from respuesta as r group by r.idadmin) as promRespuestas);
-
--- Promedio general de todas las calificaciones
-SELECT 'Promedio General' AS grupo, 
-       NULL AS subgrupo, 
-       AVG(puntuacion) AS promedio, 
-       COUNT(*) AS total_calificaciones
-FROM calificacion
-
-UNION
-
--- se calcula el promedio de respuestas por solicitud
-SELECT @promedio := AVG(conteo) 
-FROM (
-    SELECT COUNT(*) as conteo
-    FROM respuesta
-    GROUP BY idsolicitud
-) AS temp;
-
--- se selecciona las solicitudes que tienen más respuestas que ese promedio
+-- Solicitudes con mas respuesta que el promedio
 SELECT 
     s.idsolicitud,
     s.tipo,
@@ -50,31 +39,24 @@ GROUP BY s.idsolicitud
 HAVING COUNT(r.idrespuesta) > @promedio
 ORDER BY num_respuestas DESC;
 
--- ¿Cuáles son los clientes con mas quejas durante el ultimo mes?
-SELECT c.nombre, sub.total_quejas
-FROM (
-    SELECT cliente_id, COUNT(*) AS total_quejas
-    FROM quejas
-    WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)  -- Filtra quejas del último mes
-    GROUP BY cliente_id
-) AS sub
-JOIN clientes c ON sub.cliente_id = c.id
-ORDER BY sub.total_quejas DESC;
-
--- ¿Cuáles son los nombres de los clientes con más quejas registradas, considerando todos los que tienen una cantidad de quejas dentro del top 10?
-SELECT c.nombre, COUNT(q.id) AS total_quejas
-FROM quejas q
-JOIN clientes c ON q.cliente_id = c.id
-GROUP BY c.nombre
-HAVING COUNT(q.id) >= (
-    SELECT COUNT(*) 
-    FROM quejas 
-    GROUP BY cliente_id 
-    ORDER BY COUNT(*) DESC 
-)
+-- Clientes con mayor cantidad de quejas en el ultimo mes
+SELECT u.nombreCompleto AS cliente, COUNT(*) AS total_quejas
+FROM solicitud s
+JOIN usuario u ON s.idusuario = u.idusuario
+WHERE s.tipo = 'queja' 
+AND s.fechaHoraCreacion >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) -- Último mes
+GROUP BY u.idusuario, u.nombreCompleto
 ORDER BY total_quejas DESC;
 
--- Tiempo promedio de resolución de solicitudes resueltas con evidencia
+-- Clientes con mayor cantidad de reclamos 
+SELECT u.nombreCompleto AS cliente, COUNT(s.idsolicitud) AS total_quejas
+FROM solicitud s
+JOIN usuario u ON s.idusuario = u.idusuario
+WHERE s.tipo = 'reclamo'
+GROUP BY u.idusuario, u.nombreCompleto
+ORDER BY total_quejas DESC;
+
+-- Tiempo promedio, minimo y maximo de las solicitudes con evidencia resueltas
 SELECT tipo, 
        AVG(TIMESTAMPDIFF(DAY, fechaHoraCreacion, fechaActualizacion)) AS tiempo_promedio_dias,
        MIN(TIMESTAMPDIFF(DAY, fechaHoraCreacion, fechaActualizacion)) AS tiempo_minimo_dias,
@@ -92,4 +74,21 @@ JOIN respuesta r ON a.idAdmin = r.idAdmin
 WHERE r.comentario IS NULL OR r.comentario = ''
 GROUP BY a.idAdmin
 ORDER BY respuestas_pendientes DESC;
+
+-- Usuarios que han subido mas de 2 evidencias
+SELECT u.idusuario, u.nombreCompleto, COUNT(e.idevidencia) AS total_evidencias
+FROM Usuario u
+JOIN Solicitud s ON u.idusuario = s.idusuario
+JOIN Evidencia e ON s.idsolicitud = e.idsolicitud
+GROUP BY u.idusuario
+HAVING total_evidencias > 3
+ORDER BY total_evidencias DESC;
+
+-- Calificacion promedio de respuesta por tipo de solicitud
+SELECT s.tipo, ROUND(AVG(c.puntuacion),2) AS calificacion_promedio
+FROM Solicitud s
+JOIN Respuesta r ON s.idsolicitud = r.idsolicitud
+JOIN Calificacion c ON r.idrespuesta = c.idrespuesta
+GROUP BY s.tipo
+ORDER BY calificacion_promedio DESC;
 
