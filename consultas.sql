@@ -75,14 +75,16 @@ WHERE r.comentario IS NULL OR r.comentario = ''
 GROUP BY a.idAdmin
 ORDER BY respuestas_pendientes DESC;
 
--- 9. ¿Cuáles son los usuarios que han subido más de 2 evidencias en sus solicitudes?
-SELECT u.idusuario, u.nombreCompleto, COUNT(e.idevidencia) AS total_evidencias
-FROM Usuario u
-JOIN Solicitud s ON u.idusuario = s.idusuario
+-- 9. ¿Cuáles son los PQRS con la mayor cantidad de evidencias adjuntas?
+SELECT 
+    u.idusuario AS S.idsolicitud, 
+     s.descripcion,  
+    COUNT(e.id) AS total_evidencias
+FROM Solicitud s
 JOIN Evidencia e ON s.idsolicitud = e.idsolicitud
 GROUP BY u.idusuario
-HAVING total_evidencias > 3
-ORDER BY total_evidencias DESC;
+ORDER BY total_evidencias DESC 
+LIMIT 20; 
 
 -- 10. ¿Cuales PQRS no han recibido respuesta en más de 15 días?
 SELECT 
