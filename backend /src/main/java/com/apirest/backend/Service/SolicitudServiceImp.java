@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.apirest.backend.Exception.RecursoNoEncontradoException;
+import com.apirest.backend.Model.EstadoSolicitud;
 import com.apirest.backend.Model.SolicitudModel;
 import com.apirest.backend.Repository.ISolicitudRepository;
 
@@ -15,6 +16,9 @@ public class SolicitudServiceImp implements ISolicitudService{
 
     @Override
     public SolicitudModel guardarSolicitud(SolicitudModel solicitud) {
+        if (solicitud.getEstado() == null) {
+            solicitud.setEstado(EstadoSolicitud.radicada);
+}
         return solicitudRepository.save(solicitud);
     }
 
@@ -36,10 +40,16 @@ public class SolicitudServiceImp implements ISolicitudService{
     }
 
     @Override
-    public SolicitudModel actualizarSolicitudPorId(Integer id, SolicitudModel solicitud) {
-        SolicitudModel solicitudExistente = buscarSolicitudPorId(id);
-        solicitudExistente.setIdSolicitud(solicitud.getIdSolicitud());
-        return solicitudRepository.save(solicitudExistente);
+    public SolicitudModel actualizarSolicitudPorId(Integer id, SolicitudModel solicitudActualizada) {
+        SolicitudModel solicitudExistente = solicitudRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Solicitud no encontrada"));
+        solicitudActualizada.setIdSolicitud(id);
+        
+        if (solicitudActualizada.getUsuario() == null) {
+            solicitudActualizada.setUsuario(solicitudExistente.getUsuario());
+        }
+
+        return solicitudRepository.save(solicitudActualizada);
     }
-    
+        
 }

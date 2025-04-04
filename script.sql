@@ -35,12 +35,12 @@ CREATE TABLE `admin` (
 CREATE TABLE `solicitud` (
   `idsolicitud` INT NOT NULL AUTO_INCREMENT,
   `tipo` ENUM('peticion', 'queja', 'reclamo', 'sugerencia') NOT NULL,
-  `categoria` ENUM('servicios generales', 'seguridad', 'areas comunes') NOT NULL,
+  `categoria` ENUM('serviciosGenerales', 'seguridad', 'areasComunes') NOT NULL,
   `descripcion` LONGTEXT NOT NULL,
-  `estado` ENUM('radicada', 'en proceso', 'resuelta', 'cerrada', 'reabierta') NOT NULL DEFAULT 'radicada',
+  `estado` ENUM('radicada', 'enProceso', 'resuelta', 'cerrada', 'reabierta') NOT NULL DEFAULT 'radicada',
   `fecha_hora_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fecha_actualizacion` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
-  `idusuario` INT NULL,
+  `idusuario` INT NOT NULL,
   PRIMARY KEY (`idsolicitud`),
   FOREIGN KEY (`idusuario`) REFERENCES `usuario`(`idusuario`)
 );

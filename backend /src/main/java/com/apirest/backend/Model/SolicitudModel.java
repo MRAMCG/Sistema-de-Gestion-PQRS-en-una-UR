@@ -42,7 +42,6 @@ public class SolicitudModel {
     private String descripcion;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "ENUM('radicada', 'en proceso', 'resuelta', 'cerrada', 'reabierta') DEFAULT 'radicada'")
     private EstadoSolicitud estado;
 
     @Column(name = "fecha_hora_creacion", nullable = false, updatable = false)
@@ -51,9 +50,9 @@ public class SolicitudModel {
     @Column(name = "fecha_actualizacion", insertable = false)
 private LocalDateTime fechaActualizacion;
 
-    //@ManyToOne
-    //@JoinColumn(name = "idusuario")
-    //private UsuarioModel usuario;
+    @ManyToOne
+    @JoinColumn(name = "idusuario")
+    private UsuarioModel usuario;
 
 }
 

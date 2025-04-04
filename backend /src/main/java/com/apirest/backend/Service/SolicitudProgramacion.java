@@ -23,10 +23,10 @@ public class SolicitudProgramacion {
     public void cerrarSolicitudesExpiradas (){
         LocalDateTime fechaLimite = LocalDateTime.now().minusSeconds(15);
         //Buscar solicitudes resueltas que no han sido reabiertas en 15 segundos
-        List<SolicitudModel> SolicitudesExpiradas = solicitudRepository.findByEstadoAndFechaActualizacionBefore(EstadoSolicitud.RESUELTA, fechaLimite);
+        List<SolicitudModel> SolicitudesExpiradas = solicitudRepository.findByEstadoAndFechaActualizacionBefore(EstadoSolicitud.resuelta, fechaLimite);
 
         for (SolicitudModel solicitud : SolicitudesExpiradas) {
-            solicitud.setEstado(EstadoSolicitud.CERRADA);
+            solicitud.setEstado(EstadoSolicitud.cerrada);
             solicitudRepository.save(solicitud);
         }
         System.out.println("Solicitudes cerradas automáticamente: " + SolicitudesExpiradas.size());

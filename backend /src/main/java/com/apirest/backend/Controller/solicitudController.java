@@ -16,16 +16,31 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.apirest.backend.Model.SolicitudModel;
 import com.apirest.backend.Service.ISolicitudService;
+import com.apirest.backend.Service.IUsuarioService;
 
 @RestController
 @RequestMapping ("UR/solicitudes")
 
-public class solicitudController {
+public class SolicitudController {
     @Autowired ISolicitudService solicitudService;
-    
-    @PostMapping ("/insertar")
-    public ResponseEntity <SolicitudModel> guardarSolicitud(@RequestBody SolicitudModel solicitud) {
-        return new ResponseEntity<SolicitudModel>(solicitudService.guardarSolicitud(solicitud),HttpStatus.CREATED);
+    @Autowired
+    private IUsuarioService usuarioService;
+    @PostMapping("/insertar")
+    public ResponseEntity<?> guardarSolicitud(@RequestBody SolicitudModel solicitud) {
+        Integer idUsuario = solicitud.getUsuario().getIdUsuario(); 
+        var usuario = usuarioService.buscarUsuarioPorId(idUsuario);
+
+        if (usuario == null) {
+            return ResponseEntity.badRequest().body("Usuario no válido");
+        }
+        
+        if (usuario.getRol().name().equals("ANONIMO")) {
+            System.out.println("Solicitud hecha por un usuario anónimo");
+        }
+
+        solicitud.setUsuario(usuario);
+
+        return new ResponseEntity<>(solicitudService.guardarSolicitud(solicitud), HttpStatus.CREATED);
     }
 
     @GetMapping ("/listar")
