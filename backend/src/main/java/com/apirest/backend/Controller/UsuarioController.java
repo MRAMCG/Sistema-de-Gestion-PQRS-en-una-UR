@@ -7,8 +7,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.apirest.backend.DTO.Login;
-import com.apirest.backend.Model.RolUsuario;
 import com.apirest.backend.Model.UsuarioModel;
 import com.apirest.backend.Service.IUsuarioService;
 
@@ -50,31 +48,4 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Login loginRequest) {
-        UsuarioModel usuario = usuarioService.buscarPorUsuario(loginRequest.getUsuario());
-
-        if (usuario == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no encontrado");
-        }
-
-        if (usuario.getRol() == RolUsuario.anonimo) {
-            // Los anonimos solo entran con usuario
-            return ResponseEntity.ok("Login anonimo exitoso: " + usuario.getUsuario());
-        }
-
-        // Para usuarios registrados se requiere contraseña
-        String contrasenaGuardada = usuario.getContrasena();
-        String contrasenaIngresada = loginRequest.getContrasena();
-
-        if (contrasenaGuardada == null || contrasenaIngresada == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña requerida");
-        }
-
-        if (contrasenaGuardada.equals(contrasenaIngresada)) {
-            return ResponseEntity.ok("Login exitoso: " + usuario.getNombreCompleto());
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña incorrecta");
-        }
-    }
 }
