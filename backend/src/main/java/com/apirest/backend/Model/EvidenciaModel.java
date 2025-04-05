@@ -10,7 +10,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -18,41 +17,31 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table (name = "solicitud")
+@Table (name = "Evidencia")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 
 
-public class SolicitudModel {
+public class EvidenciaModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer idSolicitud;
+    private Integer idevidencia;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TipoSolicitud tipo;
+    private TipoArchivo tipo_archivo;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private CategoriaSolicitud categoria;
+    @Column(nullable = false, length = 255)
+    private String rutaarchivo;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(columnDefinition = "Text")
     private String descripcion;
 
-    @Enumerated(EnumType.STRING)
-    private EstadoSolicitud estado;
-
-    @Column(name = "fecha_hora_creacion", nullable = false, updatable = false)
-    private LocalDateTime fechaHoraCreacion = LocalDateTime.now();
-
-    @Column(name = "fecha_actualizacion", insertable = false)
-    private LocalDateTime fechaActualizacion;
+    @Column(nullable = false)
+    private LocalDateTime fecha_hora_carga;
 
     @ManyToOne
-    @JoinColumn(name = "idusuario")
-    private UsuarioModel usuario;
-
+    @JoinColumn(nullable = false, name = "idsolicitud")
+    private SolicitudModel solicitud;
 }
-

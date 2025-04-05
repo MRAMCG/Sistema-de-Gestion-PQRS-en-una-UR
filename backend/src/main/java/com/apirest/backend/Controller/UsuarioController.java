@@ -47,5 +47,4 @@ public class UsuarioController {
         usuarioService.eliminarUsuarioPorId(id);
         return ResponseEntity.noContent().build();
     }
-
 }
