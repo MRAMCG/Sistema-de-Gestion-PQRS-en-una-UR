@@ -73,3 +73,92 @@ CREATE TABLE `evidencia` (
   FOREIGN KEY (`idsolicitud`) REFERENCES `solicitud`(`idsolicitud`)
 );
 
+-- OBJETOS ALMACENADOS
+USE `SistemaGestionUR`;
+
+-- Trigger: Actualizar estado a resuelta cuando hay una respuseta
+DELIMITER $$
+
+CREATE TRIGGER actualizarEstadoResuelta
+AFTER INSERT ON respuesta
+FOR EACH ROW
+BEGIN
+  UPDATE solicitud
+  SET estado = 'resuelta',
+      fecha_actualizacion = NOW()
+  WHERE idsolicitud = NEW.idsolicitud;
+END$$
+
+DELIMITER ;
+
+-- Trigger: Cerrar automáticamente solicitudes con más de 5 días sin ser reabiertas
+
+DELIMITER //
+
+CREATE TRIGGER cerrarSolicitudAutomaticamente
+BEFORE UPDATE ON solicitud
+FOR EACH ROW
+BEGIN
+    -- Verifica si la solicitud sigue en estado "Resuelta" y han pasado 5 días desde su resolución
+    IF OLD.estado = 'resuelta' AND NEW.estado = 'resuelta' THEN
+        IF OLD.fecha_actualizacion <= DATE_SUB(NOW(), INTERVAL 5 DAY) THEN
+            SET NEW.estado = 'cerrada';
+        END IF;
+    END IF;
+END;
+//
+
+DELIMITER ;
+
+-- Trigger: Validar que los usuarios anónimos no tengan datos personales
+
+DELIMITER $$
+
+CREATE TRIGGER validarUsuarioAnonimo
+BEFORE INSERT ON usuario
+FOR EACH ROW
+BEGIN
+  IF NEW.rol = 'anonimo' THEN
+    SET NEW.nombre_completo = 'Anónimo',
+        NEW.tipo_documento = NULL,
+        NEW.numero_documento = NULL,
+        NEW.correo_electronico = NULL,
+        NEW.telefono = NULL,
+        NEW.direccion_interna = NULL;
+  END IF;
+END$$
+
+-- Procedimiento: Reabrir solicitud 
+DELIMITER $$
+
+CREATE PROCEDURE reabrirSolicitud(
+  IN p_idsolicitud INT,
+  IN p_comentario TEXT
+)
+BEGIN
+  UPDATE solicitud
+  SET estado = 'reabierta',
+      fecha_actualizacion = NOW()
+  WHERE idsolicitud = p_idsolicitud;
+
+  INSERT INTO respuesta (comentario, idsolicitud, idadmin)
+  VALUES (p_comentario, p_idsolicitud, 1); -- reemplaza 1 por idadmin real si aplica
+END$$
+
+DELIMITER ;
+
+-- Procedimiento: cantidad de solicitudes por estado y por categoria
+DELIMITER $$
+
+CREATE PROCEDURE obtenerEstadisticasPqrs()
+BEGIN
+  SELECT 
+    categoria,
+    estado,
+    COUNT(*) AS cantidad
+  FROM solicitud
+  GROUP BY categoria, estado
+  ORDER BY categoria, estado;
+END$$
+
+DELIMITER ;

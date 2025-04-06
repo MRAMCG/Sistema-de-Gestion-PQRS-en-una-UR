@@ -3,6 +3,7 @@ package com.apirest.backend.Controller;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,9 +20,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.apirest.backend.DTO.CambiarEstadoSolicitud;
+import com.apirest.backend.Model.EstadoSolicitud;
 import com.apirest.backend.Model.EvidenciaModel;
 import com.apirest.backend.Model.SolicitudModel;
 import com.apirest.backend.Model.UsuarioModel;
+import com.apirest.backend.Repository.ISolicitudRepository;
 import com.apirest.backend.Service.ISolicitudService;
 import com.apirest.backend.Service.IUsuarioService;
 import com.apirest.backend.Service.IEvidenciaService;
@@ -34,6 +38,8 @@ public class SolicitudController {
     @Autowired IEvidenciaService evidenciaService;
     @Autowired
     private IUsuarioService usuarioService;
+    @Autowired
+    private ISolicitudRepository solicitudRepository;
     @PostMapping("/insertar")
     public ResponseEntity<?> guardarSolicitud(@RequestBody SolicitudModel solicitud) {
         Integer idUsuario = solicitud.getUsuario().getIdUsuario(); 
@@ -62,10 +68,28 @@ public class SolicitudController {
         return new ResponseEntity<SolicitudModel>(solicitudService.buscarSolicitudPorId(id),HttpStatus.OK);
     }
 
-    @PutMapping ("/actualizar/{id}")
-    public ResponseEntity<SolicitudModel> actualizarCategoriaPorId(@PathVariable Integer id, @RequestBody SolicitudModel solicitud){
-        return new ResponseEntity<>(solicitudService.actualizarSolicitudPorId(id, solicitud),HttpStatus.OK);
+    @PutMapping("/actualizar/{id}")
+public ResponseEntity<?> actualizarSolicitud(@PathVariable Integer id, @RequestBody SolicitudModel nuevaSolicitud) {
+    Optional<SolicitudModel> optionalSolicitud = solicitudRepository.findById(id);
+
+    if (optionalSolicitud.isEmpty()) {
+        return ResponseEntity.notFound().build();
     }
+    SolicitudModel solicitudExistente = optionalSolicitud.get();
+
+    if (nuevaSolicitud.getEstado() != null &&
+        !nuevaSolicitud.getEstado().equals(solicitudExistente.getEstado())) {
+        return ResponseEntity.badRequest().body("No tiene autorizacion para cambiar el estado");
+    }
+
+    solicitudExistente.setCategoria(nuevaSolicitud.getCategoria());
+    solicitudExistente.setDescripcion(nuevaSolicitud.getDescripcion());
+    solicitudExistente.setTipo(nuevaSolicitud.getTipo());
+    solicitudExistente.setFechaActualizacion(LocalDateTime.now());
+
+    solicitudRepository.save(solicitudExistente);
+    return new ResponseEntity<SolicitudModel>(solicitudService.buscarSolicitudPorId(id),HttpStatus.OK);
+}
     
     @DeleteMapping ("eliminar/{id}")
     public ResponseEntity<Void> eliminarSolicitudPorId(@PathVariable Integer id){
@@ -122,4 +146,26 @@ public class SolicitudController {
 
         return new ResponseEntity<List<EvidenciaModel>>(evidenciaService.obtenerEvidenciasPorSolicitud(solicitud), HttpStatus.OK);
     }
+    @PutMapping("/{id}/estado")
+    public ResponseEntity<?> actualizarEstadoSolicitud(@PathVariable Integer id, @RequestBody CambiarEstadoSolicitud estadoDto) {
+        Optional<SolicitudModel> optionalSolicitud = solicitudRepository.findById(id);
+
+        if (optionalSolicitud.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        SolicitudModel solicitud = optionalSolicitud.get();
+
+        // Verifica si ya está cerrada
+        if (solicitud.getEstado() == EstadoSolicitud.cerrada) {
+            return ResponseEntity.badRequest().body("No se puede modificar una solicitud cerrada.");
+        }
+
+        // Cambia solo el estado y guarda
+        solicitud.setEstado(estadoDto.getEstado());
+        solicitudRepository.save(solicitud);
+
+        return ResponseEntity.ok("Estado actualizado correctamente.");
+    }
+
 }

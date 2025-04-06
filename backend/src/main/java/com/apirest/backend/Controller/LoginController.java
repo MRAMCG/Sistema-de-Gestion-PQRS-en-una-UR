@@ -16,7 +16,7 @@ import com.apirest.backend.Service.IUsuarioService;
 import com.apirest.backend.Model.AdminModel;
 
 @RestController
-@RequestMapping("UR")
+@RequestMapping("UR/usuarios")
 public class LoginController {
 
     @Autowired
