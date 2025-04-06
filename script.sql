@@ -76,7 +76,7 @@ CREATE TABLE `evidencia` (
 -- OBJETOS ALMACENADOS
 USE `SistemaGestionUR`;
 
--- Trigger: Actualizar estado a resuelta cuando hay una respuseta
+-- Trigger: Actualizar estado a resuelta cuando hay una respuesta
 DELIMITER $$
 
 CREATE TRIGGER actualizarEstadoResuelta
@@ -91,19 +91,17 @@ END$$
 
 DELIMITER ;
 
--- Trigger: Cerrar automáticamente solicitudes con más de 5 días sin ser reabiertas
+-- Trigger: impedir modificar solicitudes cerradas
 
 DELIMITER //
 
-CREATE TRIGGER cerrarSolicitudAutomaticamente
+CREATE TRIGGER evitarCambiosSiCerrada
 BEFORE UPDATE ON solicitud
 FOR EACH ROW
 BEGIN
-    -- Verifica si la solicitud sigue en estado "Resuelta" y han pasado 5 días desde su resolución
-    IF OLD.estado = 'resuelta' AND NEW.estado = 'resuelta' THEN
-        IF OLD.fecha_actualizacion <= DATE_SUB(NOW(), INTERVAL 5 DAY) THEN
-            SET NEW.estado = 'cerrada';
-        END IF;
+    IF OLD.estado = 'cerrada' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'No se puede modificar una solicitud cerrada.';
     END IF;
 END;
 //
