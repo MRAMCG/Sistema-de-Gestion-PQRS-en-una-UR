@@ -53,7 +53,7 @@ CREATE TABLE `respuesta` (
   `fecha_respuesta` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `puntuacion` INT CHECK (`puntuacion` BETWEEN 1 AND 5),
   `idsolicitud` INT NOT NULL,
-  `idadmin` INT NOT NULL,
+  `idadmin` INT NULL,
   `respuestaid` INT NULL,
   PRIMARY KEY (`idrespuesta`),
   FOREIGN KEY (`idsolicitud`) REFERENCES `solicitud`(`idsolicitud`),
