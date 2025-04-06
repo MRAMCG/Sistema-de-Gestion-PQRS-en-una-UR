@@ -7,4 +7,5 @@ import com.apirest.backend.Model.AdminModel;
 
 @Repository
 public interface IAdminRepository extends JpaRepository<AdminModel, Integer> {
+    AdminModel findByUsuario(String usuario);
 }

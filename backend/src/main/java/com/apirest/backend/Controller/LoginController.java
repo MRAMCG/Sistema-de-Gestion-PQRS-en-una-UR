@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.apirest.backend.DTO.Login;
 import com.apirest.backend.Model.RolUsuario;
 import com.apirest.backend.Model.UsuarioModel;
+import com.apirest.backend.Service.IAdminService;
 import com.apirest.backend.Service.IUsuarioService;
-
-// import com.apirest.backend.Model.AdminModel;
+import com.apirest.backend.Model.AdminModel;
 
 @RestController
 @RequestMapping("UR")
@@ -21,22 +21,22 @@ public class LoginController {
 
     @Autowired
     IUsuarioService usuarioService;
+    @Autowired
+    IAdminService adminService;
 
-    //@Autowired
-    //IAdminService AdminService;
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Login loginRequest) {
         
         // Mira si es un admin
-        // AdminModel admin = adminService.buscarPorUsuario(loginRequest.getUsuario());
+        AdminModel admin = adminService.buscarPorUsuario(loginRequest.getUsuario());
 
-        //if (admin != null) {
-        //    if (admin.getContrasena().equals(loginRequest.getContrasena())) {
-        //        return ResponseEntity.ok("Login exitoso (admin): " + admin.getUsuario());
-        //    } else {
-        //        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña incorrecta para admin");
-        //    }
-        //}
+        if (admin != null) {
+            if (admin.getContrasena().equals(loginRequest.getContrasena())) {
+                return ResponseEntity.ok("Login exitoso (admin): " + admin.getUsuario());
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña incorrecta para admin");
+            }
+        }
 
         UsuarioModel usuario = usuarioService.buscarPorUsuario(loginRequest.getUsuario());
 

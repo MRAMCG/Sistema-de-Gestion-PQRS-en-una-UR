@@ -9,4 +9,5 @@ public interface IAdminService {
     public AdminModel buscarAdminPorId(Integer id);
     public AdminModel actualizarAdminPorId(Integer id, AdminModel adminActualizado);
     public void eliminarAdminPorId(Integer id);
+    public AdminModel buscarPorUsuario(String usuario);
 }

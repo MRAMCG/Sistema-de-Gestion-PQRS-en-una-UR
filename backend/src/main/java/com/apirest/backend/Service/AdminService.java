@@ -43,4 +43,8 @@ public class AdminService implements IAdminService {
     public void eliminarAdminPorId(Integer id) {
         adminRepository.deleteById(id);
     }
+    @Override
+    public AdminModel buscarPorUsuario(String usuario) {
+        return adminRepository.findByUsuario(usuario);
+    }
 }
