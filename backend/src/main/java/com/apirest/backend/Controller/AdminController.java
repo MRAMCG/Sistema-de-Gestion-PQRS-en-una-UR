@@ -1,50 +1,45 @@
-package com.sistemagestionur.controller;
+package com.apirest.backend.Controller;
 
-import com.sistemagestionur.model.Admin;
-import com.sistemagestionur.repository.AdminRepository;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import com.apirest.backend.Model.AdminModel;
+import com.apirest.backend.Service.IAdminService;
 
 @RestController
-@RequestMapping("/admins")
+@RequestMapping("UR/administradores")
 public class AdminController {
 
     @Autowired
-    private AdminRepository adminRepository;
+    private IAdminService adminService;
 
-    // GET /admins
-    @GetMapping
-    public List<Admin> getAll() {
-        return adminRepository.findAll();
+    @PostMapping("/insertar")
+    public ResponseEntity<AdminModel> insertarAdmin(@RequestBody AdminModel admin) {
+        return new ResponseEntity<>(adminService.guardarAdmin(admin), HttpStatus.CREATED);
     }
 
-    // GET /admins/1
-    @GetMapping("/{id}")
-    public ResponseEntity<Admin> getById(@PathVariable Integer id) {
-        return adminRepository.findById(id)
-                .map(admin -> ResponseEntity.ok(admin))
-                .orElse(ResponseEntity.notFound().build());
+    @GetMapping("/listar")
+    public ResponseEntity<List<AdminModel>> listarAdmins() {
+        return new ResponseEntity<>(adminService.listarAdmins(), HttpStatus.OK);
     }
 
-    // POST /admins (crear)
-    @PostMapping
-    public Admin create(@RequestBody Admin admin) {
-        return adminRepository.save(admin);
+    @GetMapping("/buscarporid/{id}")
+    public ResponseEntity<AdminModel> buscarPorId(@PathVariable Integer id) {
+        return new ResponseEntity<>(adminService.buscarAdminPorId(id), HttpStatus.OK);
     }
 
-    // POST /admins/login (login)
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Admin admin) {
-        Optional<Admin> encontrado = adminRepository.findByUsuarioAndContrasena(
-                admin.getUsuario(), admin.getContrasena());
+    @PutMapping("/actualizar/{id}")
+    public ResponseEntity<AdminModel> actualizarAdmin(@PathVariable Integer id, @RequestBody AdminModel admin) {
+        return new ResponseEntity<>(adminService.actualizarAdminPorId(id, admin), HttpStatus.OK);
+    }
 
-        if (encontrado.isPresent()) {
-            return ResponseEntity.ok(encontrado.get());
-        } else {
-            return ResponseEntity.status(401).body("Credenciales incorrectas");
-        }
+    @DeleteMapping("/eliminar/{id}")
+    public ResponseEntity<Void> eliminarAdmin(@PathVariable Integer id) {
+        adminService.eliminarAdminPorId(id);
+        return ResponseEntity.noContent().build();
     }
 }

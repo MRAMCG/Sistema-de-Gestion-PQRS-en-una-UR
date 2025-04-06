@@ -1,9 +1,10 @@
-package com.sistemagestionur.repository;
+package com.apirest.backend.Repository;
 
-import com.sistemagestionur.model.Admin;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+import com.apirest.backend.Model.AdminModel;
 
-public interface AdminRepository extends JpaRepository<Admin, Integer> {
-    Optional<Admin> findByUsuarioAndContrasena(String usuario, String contrasena);
+@Repository
+public interface IAdminRepository extends JpaRepository<AdminModel, Integer> {
+}
