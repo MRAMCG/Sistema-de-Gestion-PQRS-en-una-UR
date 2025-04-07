@@ -140,7 +140,7 @@ BEGIN
   WHERE idsolicitud = p_idsolicitud;
 
   INSERT INTO respuesta (comentario, idsolicitud, idadmin)
-  VALUES (p_comentario, p_idsolicitud, 1); -- reemplaza 1 por idadmin real si aplica
+  VALUES (p_comentario, p_idsolicitud, NULL);
 END$$
 
 DELIMITER ;
