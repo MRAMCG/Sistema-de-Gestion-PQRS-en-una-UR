@@ -72,29 +72,27 @@ VALUES
 ('Estamos verificando el cierre del gimnasio con el área correspondiente.', 12, 2, 2),
 ('Se enviará un técnico a revisar el ascensor esta semana.', 22, 2, 2),
 ('El problema del techo será evaluado en el próximo mes.', 23, 1, 1),
-('Se hará seguimiento semanal al área común reportada.', 12, 1, 3)
-;                
+('Se hará seguimiento semanal al área común reportada.', 12, 1, 3);
 
 -- Replica residentes registrados
-INSERT INTO respuesta (comentario, idsolicitud, respuestaid)
+INSERT INTO respuesta (comentario, idsolicitud, respuestaid, idusuario)
 VALUES
-('Han pasado varios días y la basura sigue acumulada. ¿Cuándo lo resolverán?', 1, 1),
-('La banca aún no ha sido instalada. ¿Hubo algún inconveniente?', 2, 2),
-('Hoy volvieron a verse personas sospechosas. ¿Se pueden tomar medidas urgentes?', 3, 3),
-('La presión del agua sigue muy baja. El técnico no vino.', 5, 5),
-('Los juegos siguen igual. Nadie ha venido a revisarlos.', 7, 7),
-('El gimnasio sigue cerrado. No se ha informado nada nuevo.', 12, 11);                           
+('Han pasado varios días y la basura sigue acumulada. ¿Cuándo lo resolverán?', 1, 1, 1),
+('La banca aún no ha sido instalada. ¿Hubo algún inconveniente?', 2, 2, 2),
+('Hoy volvieron a verse personas sospechosas. ¿Se pueden tomar medidas urgentes?', 3, 3, 3),
+('La presión del agua sigue muy baja. El técnico no vino.', 5, 5, 5),
+('Los juegos siguen igual. Nadie ha venido a revisarlos.', 7, 7, 7),
+('El gimnasio sigue cerrado. No se ha informado nada nuevo.', 12, 11, 12);
 
 -- respuesta admin a replicas
 INSERT INTO respuesta (comentario, idsolicitud, idadmin, respuestaid, puntuacion)
 VALUES
-('Hemos cambiado de proveedor. El nuevo operador iniciará mañana.', 1, 1, 12, 4),
-('Tuvimos retraso por lluvias. La banca será instalada esta semana.', 2, 2, 13, 3),
-('Se reforzará la vigilancia con rondas cada hora en la noche.', 3, 1, 14, 4),
-('El técnico tuvo una emergencia. Irá sin falta mañana a primera hora.', 5, 1, 15, 5),
-('Ya se asignó al personal de mantenimiento para esta tarde.', 7, 1, 16, 5),
-('Se publicará un comunicado hoy con los horarios de reapertura.', 12, 2, 17, 4);
-
+('Hemos cambiado de proveedor. El nuevo operador iniciará mañana.', 1, 1, 15, 4),
+('Tuvimos retraso por lluvias. La banca será instalada esta semana.', 2, 2, 16, 3),
+('Se reforzará la vigilancia con rondas cada hora en la noche.', 3, 1, 17, 4),
+('El técnico tuvo una emergencia. Irá sin falta mañana a primera hora.', 5, 1, 18, 5),
+('Ya se asignó al personal de mantenimiento para esta tarde.', 7, 1, 19, 5),
+('Se publicará un comunicado hoy con los horarios de reapertura.', 12, 2, 20, 4);
 
 INSERT INTO evidencia (tipo_archivo, rutaarchivo, descripcion, idsolicitud)
 VALUES
