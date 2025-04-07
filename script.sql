@@ -61,6 +61,7 @@ CREATE TABLE `respuesta` (
   FOREIGN KEY (`idadmin`) REFERENCES `admin`(`idadmin`),
   FOREIGN KEY (`idusuario`) REFERENCES `usuario`(`idusuario`),
   FOREIGN KEY (`respuestaid`) REFERENCES `respuesta`(`idrespuesta`)
+);
 
 -- Tabla de Evidencias Adjuntas
 CREATE TABLE `evidencia` (
@@ -76,21 +77,6 @@ CREATE TABLE `evidencia` (
 
 -- OBJETOS ALMACENADOS
 USE `SistemaGestionUR`;
-
--- Trigger: Actualizar estado a resuelta cuando hay una respuesta
-DELIMITER $$
-
-CREATE TRIGGER actualizarEstadoResuelta
-AFTER INSERT ON respuesta
-FOR EACH ROW
-BEGIN
-  UPDATE solicitud
-  SET estado = 'resuelta',
-      fecha_actualizacion = NOW()
-  WHERE idsolicitud = NEW.idsolicitud;
-END$$
-
-DELIMITER ;
 
 -- Trigger: impedir modificar solicitudes cerradas
 
@@ -159,44 +145,21 @@ END$$
 
 DELIMITER ;
 
--- Trigger: cerrar solicitud tras 15 segundos
-DELIMITER $$
-
-CREATE TRIGGER programarCierreSiNoReplica
-AFTER INSERT ON respuesta
-FOR EACH ROW
-BEGIN
-  DECLARE nombre_evento VARCHAR(64);
-
-  -- Solo si la respuesta es de un admin (respuesta inicial)
-  IF NEW.idadmin IS NOT NULL AND NEW.respuestaid IS NULL THEN
-    SET nombre_evento = CONCAT('cerrar_', NEW.idsolicitud, '_', UNIX_TIMESTAMP());
-
-    SET @query = CONCAT(
-      'CREATE EVENT ', nombre_evento, '
-       ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 15 SECOND
-       DO
-         BEGIN
-           IF NOT EXISTS (
-             SELECT 1 FROM respuesta
-             WHERE respuestaid = ', NEW.idrespuesta, '
-             AND idusuario IS NOT NULL
-           ) THEN
-             UPDATE solicitud
-             SET estado = "cerrada",
-                 fecha_actualizacion = NOW()
-             WHERE idsolicitud = ', NEW.idsolicitud, ';
-           END IF;
-         END;'
+-- Evento: cerrar solicitud tras 15 segundos
+CREATE EVENT cerrarSolicitudesSinReplica
+ON SCHEDULE EVERY 15 SECOND
+DO
+  UPDATE solicitud s
+  SET s.estado = 'cerrada',
+      s.fecha_actualizacion = NOW()
+  WHERE s.estado = 'resuelta'
+    AND NOT EXISTS (
+      SELECT 1
+      FROM respuesta r
+      JOIN usuario u ON u.idusuario = r.idusuario
+      WHERE r.idsolicitud = s.idsolicitud
+        AND u.rol IN ('propietario', 'inquilino')
     );
-
-    PREPARE stmt FROM @query;
-    EXECUTE stmt;
-    DEALLOCATE PREPARE stmt;
-  END IF;
-END$$
-
-DELIMITER ;
 
 -- Trigger validad que no son anonimos par replicar
 
