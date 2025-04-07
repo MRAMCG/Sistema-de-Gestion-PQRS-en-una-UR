@@ -161,8 +161,10 @@ public ResponseEntity<?> actualizarSolicitud(@PathVariable Integer id, @RequestB
             return ResponseEntity.badRequest().body("No se puede modificar una solicitud cerrada.");
         }
 
-        // Cambia solo el estado y guarda
+        // Cambia el estado y actualiza la fecha
         solicitud.setEstado(estadoDto.getEstado());
+        solicitud.setFechaActualizacion(LocalDateTime.now()); // <- Aquí se actualiza la fecha
+
         solicitudRepository.save(solicitud);
 
         return ResponseEntity.ok("Estado actualizado correctamente.");
