@@ -131,8 +131,7 @@ DELIMITER $$
 
 CREATE PROCEDURE reabrirSolicitud(
   IN p_idsolicitud INT,
-  IN p_comentario TEXT,
-  IN p_idadmin INT
+  IN p_comentario TEXT
 )
 BEGIN
   UPDATE solicitud
@@ -141,7 +140,7 @@ BEGIN
   WHERE idsolicitud = p_idsolicitud;
 
   INSERT INTO respuesta (comentario, idsolicitud, idadmin)
-  VALUES (p_comentario, p_idsolicitud, p_idadmin);
+  VALUES (p_comentario, p_idsolicitud, NULL);
 END$$
 
 DELIMITER ;
