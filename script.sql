@@ -142,6 +142,87 @@ END$$
 
 DELIMITER ;
 
+-- Trigger pasar a resuelta cuando un admin responde
+DELIMITER $$
+
+CREATE TRIGGER marcarComoResueltaPorAdmin
+AFTER INSERT ON respuesta
+FOR EACH ROW
+BEGIN
+  IF NEW.idadmin IS NOT NULL AND NEW.respuestaid IS NULL THEN
+    UPDATE solicitud
+    SET estado = 'resuelta',
+        fecha_actualizacion = NOW()
+    WHERE idsolicitud = NEW.idsolicitud;
+  END IF;
+END$$
+
+DELIMITER ;
+
+-- Trigger: cerrar solicitud tras 15 segundos
+DELIMITER $$
+
+CREATE TRIGGER programarCierreSiNoReplica
+AFTER INSERT ON respuesta
+FOR EACH ROW
+BEGIN
+  DECLARE nombre_evento VARCHAR(64);
+
+  -- Solo si la respuesta es de un admin (respuesta inicial)
+  IF NEW.idadmin IS NOT NULL AND NEW.respuestaid IS NULL THEN
+    SET nombre_evento = CONCAT('cerrar_', NEW.idsolicitud, '_', UNIX_TIMESTAMP());
+
+    SET @query = CONCAT(
+      'CREATE EVENT ', nombre_evento, '
+       ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 15 SECOND
+       DO
+         BEGIN
+           IF NOT EXISTS (
+             SELECT 1 FROM respuesta
+             WHERE respuestaid = ', NEW.idrespuesta, '
+             AND idusuario IS NOT NULL
+           ) THEN
+             UPDATE solicitud
+             SET estado = "cerrada",
+                 fecha_actualizacion = NOW()
+             WHERE idsolicitud = ', NEW.idsolicitud, ';
+           END IF;
+         END;'
+    );
+
+    PREPARE stmt FROM @query;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+  END IF;
+END$$
+
+DELIMITER ;
+
+-- Trigger validad que no son anonimos par replicar
+
+DELIMITER $$
+
+CREATE TRIGGER validarReplicaPorRol
+BEFORE INSERT ON respuesta
+FOR EACH ROW
+BEGIN
+  DECLARE user_rol VARCHAR(20);
+
+  -- Solo si es una respuesta con idusuario (replica)
+  IF NEW.idusuario IS NOT NULL THEN
+    SELECT rol INTO user_rol
+    FROM usuario
+    WHERE idusuario = NEW.idusuario;
+
+    IF user_rol = 'anonimo' THEN
+      SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Los usuarios anónimos no pueden enviar réplicas.';
+    END IF;
+  END IF;
+END$$
+
+DELIMITER ;
+
 -- Procedimiento: Reabrir solicitud 
 DELIMITER $$
 
