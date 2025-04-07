@@ -45,7 +45,7 @@ CREATE TABLE `solicitud` (
   FOREIGN KEY (`idusuario`) REFERENCES `usuario`(`idusuario`)
 );
 
--- Tabla de Respuestas a Solicitudes
+-- Tabla de Respuestas 
 CREATE TABLE `respuesta` (
   `idrespuesta` INT NOT NULL AUTO_INCREMENT,
   `ruta_oficio_pdf` VARCHAR(255) NULL,
@@ -54,12 +54,13 @@ CREATE TABLE `respuesta` (
   `puntuacion` INT CHECK (`puntuacion` BETWEEN 1 AND 5),
   `idsolicitud` INT NOT NULL,
   `idadmin` INT NULL,
+  `idusuario` INT NULL,
   `respuestaid` INT NULL,
   PRIMARY KEY (`idrespuesta`),
   FOREIGN KEY (`idsolicitud`) REFERENCES `solicitud`(`idsolicitud`),
   FOREIGN KEY (`idadmin`) REFERENCES `admin`(`idadmin`),
+  FOREIGN KEY (`idusuario`) REFERENCES `usuario`(`idusuario`),
   FOREIGN KEY (`respuestaid`) REFERENCES `respuesta`(`idrespuesta`)
-);
 
 -- Tabla de Evidencias Adjuntas
 CREATE TABLE `evidencia` (
@@ -125,6 +126,21 @@ BEGIN
         NEW.direccion_interna = NULL;
   END IF;
 END$$
+
+-- Trigger: garantizar que la puntuacion sea entre 1 y 5
+DELIMITER $$
+
+CREATE TRIGGER validar_puntuacion_respuesta
+BEFORE INSERT ON respuesta
+FOR EACH ROW
+BEGIN
+  IF NEW.puntuacion IS NOT NULL AND (NEW.puntuacion < 1 OR NEW.puntuacion > 5) THEN
+    SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT = 'La puntuación debe estar entre 1 y 5';
+  END IF;
+END$$
+
+DELIMITER ;
 
 -- Procedimiento: Reabrir solicitud 
 DELIMITER $$
