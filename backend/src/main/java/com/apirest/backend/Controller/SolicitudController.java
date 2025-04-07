@@ -21,13 +21,16 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.apirest.backend.DTO.CambiarEstadoSolicitud;
+import com.apirest.backend.Model.AdminModel;
 import com.apirest.backend.Model.EstadoSolicitud;
 import com.apirest.backend.Model.EvidenciaModel;
+import com.apirest.backend.Model.RolUsuario;
 import com.apirest.backend.Model.SolicitudModel;
 import com.apirest.backend.Model.UsuarioModel;
 import com.apirest.backend.Repository.ISolicitudRepository;
 import com.apirest.backend.Service.ISolicitudService;
 import com.apirest.backend.Service.IUsuarioService;
+import com.apirest.backend.Service.IAdminService;
 import com.apirest.backend.Service.IEvidenciaService;
 
 @RestController
@@ -36,25 +39,30 @@ import com.apirest.backend.Service.IEvidenciaService;
 public class SolicitudController {
     @Autowired ISolicitudService solicitudService;
     @Autowired IEvidenciaService evidenciaService;
-    @Autowired
-    private IUsuarioService usuarioService;
-    @Autowired
-    private ISolicitudRepository solicitudRepository;
+    @Autowired private IUsuarioService usuarioService;
+    @Autowired private ISolicitudRepository solicitudRepository;
+    @Autowired private IAdminService adminService;
+
     @PostMapping("/insertar")
-    public ResponseEntity<?> guardarSolicitud(@RequestBody SolicitudModel solicitud) {
-        Integer idUsuario = solicitud.getUsuario().getIdUsuario(); 
-        var usuario = usuarioService.buscarUsuarioPorId(idUsuario);
+    public ResponseEntity<?> guardarSolicitud(
+            @RequestBody SolicitudModel solicitud,
+            @RequestParam String usuario,
+            @RequestParam(required = false) String contrasena) {
 
-        if (usuario == null) {
-            return ResponseEntity.badRequest().body("Usuario no válido");
+        UsuarioModel user = usuarioService.buscarPorUsuario(usuario);
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no válido");
         }
-        
-        if (usuario.getRol().name().equals("ANONIMO")) {
-            System.out.println("Solicitud hecha por un usuario anónimo");
+
+        if (user.getRol() != RolUsuario.anonimo) {
+            // Si no es anónimo, se debe validar la contraseña
+            if (contrasena == null || !contrasena.equals(user.getContrasena())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña incorrecta");
+            }
         }
 
-        solicitud.setUsuario(usuario);
-
+        solicitud.setUsuario(user);
         return new ResponseEntity<>(solicitudService.guardarSolicitud(solicitud), HttpStatus.CREATED);
     }
 
@@ -69,62 +77,118 @@ public class SolicitudController {
     }
 
     @PutMapping("/actualizar/{id}")
-public ResponseEntity<?> actualizarSolicitud(@PathVariable Integer id, @RequestBody SolicitudModel nuevaSolicitud) {
-    Optional<SolicitudModel> optionalSolicitud = solicitudRepository.findById(id);
+    public ResponseEntity<?> actualizarSolicitud(
+            @PathVariable Integer id,
+            @RequestBody SolicitudModel nuevaSolicitud,
+            @RequestParam String usuario,
+            @RequestParam(required = false) String contrasena) {
 
-    if (optionalSolicitud.isEmpty()) {
-        return ResponseEntity.notFound().build();
+        UsuarioModel user = usuarioService.buscarPorUsuario(usuario);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no válido");
+        }
+        if (user.getRol() != RolUsuario.anonimo &&
+            (contrasena == null || !contrasena.equals(user.getContrasena()))) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña incorrecta");
+        }
+
+        Optional<SolicitudModel> optionalSolicitud = solicitudRepository.findById(id);
+        if (optionalSolicitud.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        SolicitudModel solicitudExistente = optionalSolicitud.get();
+
+        if (!solicitudExistente.getUsuario().getIdUsuario().equals(user.getIdUsuario())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No puede editar solicitudes de otros usuarios");
+        }
+
+        if (solicitudExistente.getEstado() != EstadoSolicitud.radicada) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Solo se pueden editar solicitudes en estado 'radicada'");
+        }
+
+
+        if (nuevaSolicitud.getEstado() != null &&
+            !nuevaSolicitud.getEstado().equals(solicitudExistente.getEstado())) {
+            return ResponseEntity.badRequest().body("No tiene autorización para cambiar el estado");
+        }
+
+        solicitudExistente.setCategoria(nuevaSolicitud.getCategoria());
+        solicitudExistente.setDescripcion(nuevaSolicitud.getDescripcion());
+        solicitudExistente.setTipo(nuevaSolicitud.getTipo());
+        solicitudExistente.setFechaActualizacion(LocalDateTime.now());
+
+        solicitudRepository.save(solicitudExistente);
+        return new ResponseEntity<>(solicitudExistente, HttpStatus.OK);
     }
-    SolicitudModel solicitudExistente = optionalSolicitud.get();
-
-    if (nuevaSolicitud.getEstado() != null &&
-        !nuevaSolicitud.getEstado().equals(solicitudExistente.getEstado())) {
-        return ResponseEntity.badRequest().body("No tiene autorizacion para cambiar el estado");
-    }
-
-    solicitudExistente.setCategoria(nuevaSolicitud.getCategoria());
-    solicitudExistente.setDescripcion(nuevaSolicitud.getDescripcion());
-    solicitudExistente.setTipo(nuevaSolicitud.getTipo());
-    solicitudExistente.setFechaActualizacion(LocalDateTime.now());
-
-    solicitudRepository.save(solicitudExistente);
-    return new ResponseEntity<SolicitudModel>(solicitudService.buscarSolicitudPorId(id),HttpStatus.OK);
-}
     
-    @DeleteMapping ("eliminar/{id}")
-    public ResponseEntity<Void> eliminarSolicitudPorId(@PathVariable Integer id){
+    @DeleteMapping("eliminar/{id}")
+    public ResponseEntity<?> eliminarSolicitudPorId(
+            @PathVariable Integer id,
+            @RequestParam String usuario,
+            @RequestParam(required = false) String contrasena) {
+
+        UsuarioModel user = usuarioService.buscarPorUsuario(usuario);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no válido");
+        }
+        if (user.getRol() != RolUsuario.anonimo &&
+            (contrasena == null || !contrasena.equals(user.getContrasena()))) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña incorrecta");
+        }
+
+        SolicitudModel solicitud = solicitudService.buscarSolicitudPorId(id);
+        if (solicitud == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!solicitud.getUsuario().getIdUsuario().equals(user.getIdUsuario())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No puede eliminar solicitudes de otros usuarios");
+        }
+
+        if (solicitud.getEstado() != EstadoSolicitud.radicada) {
+            return ResponseEntity.badRequest().body("Solo se pueden eliminar solicitudes en estado 'radicada'");
+        }
+
         solicitudService.eliminarSolicitudPorId(id);
-            return ResponseEntity.noContent().build();
+        return ResponseEntity.noContent().build();
     }
 
-    @PostMapping (value = "{id}/evidencias", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "{id}/evidencias", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> guardarEvidencia(
         @PathVariable Integer id,
         @RequestParam("archivo") MultipartFile archivo,
-        @RequestParam("idUsuario") Integer idUsuario,
+        @RequestParam("usuario") String usuario,
+        @RequestParam(value = "contrasena", required = false) String contrasena,
         @RequestParam(value = "descripcion", required = false) String descripcion
     ) {
         if (archivo.isEmpty()) {
             return ResponseEntity.badRequest().body("Archivo no puede estar vacío");
         }
 
-        UsuarioModel usuario = usuarioService.buscarUsuarioPorId(idUsuario);
-        if (usuario == null) {
-            return ResponseEntity.badRequest().body("Usuario no válidos");
+        UsuarioModel user = usuarioService.buscarPorUsuario(usuario);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no válido");
+        }
+
+        if (user.getRol() != RolUsuario.anonimo) {
+            // Si no es anónimo, validar contraseña
+            if (contrasena == null || !contrasena.equals(user.getContrasena())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña incorrecta");
+            }
         }
 
         SolicitudModel solicitud = solicitudService.buscarSolicitudPorId(id);
         if (solicitud == null) {
-            return ResponseEntity.badRequest().body("Solicitud no válidos");
+            return ResponseEntity.badRequest().body("Solicitud no válida");
         }
 
-        if (solicitud.getUsuario() != usuario) {
-            return ResponseEntity.badRequest().body("Solicitud no pertenece al usuario");
+        if (!solicitud.getUsuario().getIdUsuario().equals(user.getIdUsuario())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("La solicitud no pertenece al usuario");
         }
-        
+
         try {
             EvidenciaModel evidencia = new EvidenciaModel();
-            
             evidencia.setDescripcion(descripcion);
             evidencia.setSolicitud(solicitud);
             evidencia.setFecha_hora_carga(LocalDateTime.now());
@@ -133,7 +197,7 @@ public ResponseEntity<?> actualizarSolicitud(@PathVariable Integer id, @RequestB
 
             return ResponseEntity.status(HttpStatus.CREATED).body(evidenciaGuardada);
         } catch (IOException e) {
-            return ResponseEntity.internalServerError().body("Error al procesar archivo: "+ e.getMessage());
+            return ResponseEntity.internalServerError().body("Error al procesar archivo: " + e.getMessage());
         }
     }
 
@@ -147,23 +211,30 @@ public ResponseEntity<?> actualizarSolicitud(@PathVariable Integer id, @RequestB
         return new ResponseEntity<List<EvidenciaModel>>(evidenciaService.obtenerEvidenciasPorSolicitud(solicitud), HttpStatus.OK);
     }
     @PutMapping("/{id}/estado")
-    public ResponseEntity<?> actualizarEstadoSolicitud(@PathVariable Integer id, @RequestBody CambiarEstadoSolicitud estadoDto) {
-        Optional<SolicitudModel> optionalSolicitud = solicitudRepository.findById(id);
+    public ResponseEntity<?> actualizarEstadoSolicitud(
+            @PathVariable Integer id,
+            @RequestBody CambiarEstadoSolicitud estadoDto,
+            @RequestParam String usuario,
+            @RequestParam String contrasena) {
 
+        AdminModel admin = adminService.buscarPorUsuario(usuario);
+        if (admin == null || !admin.getContrasena().equals(contrasena)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Solo administradores pueden cambiar el estado");
+        }
+
+        Optional<SolicitudModel> optionalSolicitud = solicitudRepository.findById(id);
         if (optionalSolicitud.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
         SolicitudModel solicitud = optionalSolicitud.get();
 
-        // Verifica si ya está cerrada
         if (solicitud.getEstado() == EstadoSolicitud.cerrada) {
             return ResponseEntity.badRequest().body("No se puede modificar una solicitud cerrada.");
         }
 
-        // Cambia el estado y actualiza la fecha
         solicitud.setEstado(estadoDto.getEstado());
-        solicitud.setFechaActualizacion(LocalDateTime.now()); // <- Aquí se actualiza la fecha
+        solicitud.setFechaActualizacion(LocalDateTime.now());
 
         solicitudRepository.save(solicitud);
 
